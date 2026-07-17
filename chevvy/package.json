@@ -1,0 +1,61 @@
+{
+  "name": "Chevvy Privacy Policy Module",
+  "version": "1.0.0",
+  "description": "Production-ready Privacy Policy module for Flutter mobile application",
+  "keywords": [
+    "flutter",
+    "privacy",
+    "firebase",
+    "material-design",
+    "security"
+  ],
+  "author": "Chevvy Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anyaforger123456/chevvy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anyaforger123456/chevvy/issues"
+  },
+  "homepage": "https://github.com/anyaforger123456/chevvy",
+  "engines": {
+    "flutter": ">=3.0.0",
+    "dart": ">=3.0.0"
+  },
+  "scripts": {
+    "install": "bash install.sh",
+    "install:win": "install.bat",
+    "dev": "flutter run",
+    "build:android": "flutter build apk --release",
+    "build:ios": "flutter build ios --release",
+    "build:web": "flutter build web --release",
+    "analyze": "flutter analyze",
+    "format": "dart format lib/",
+    "test": "flutter test",
+    "test:coverage": "flutter test --coverage",
+    "clean": "flutter clean && flutter pub get"
+  },
+  "dependencies": {
+    "flutter": ">=3.0.0",
+    "firebase_core": "^2.24.0",
+    "firebase_auth": "^4.14.0",
+    "cloud_firestore": "^4.14.0",
+    "shared_preferences": "^2.2.2",
+    "flutter_secure_storage": "^9.0.0",
+    "go_router": "^12.1.1"
+  },
+  "devDependencies": {
+    "flutter_test": "sdk:flutter",
+    "flutter_lints": "^3.0.0",
+    "build_runner": "^2.4.0"
+  },
+  "platforms": {
+    "android": ">=21",
+    "ios": ">=12.0",
+    "web": true,
+    "windows": true,
+    "macos": true,
+    "linux": true
+  }
+}

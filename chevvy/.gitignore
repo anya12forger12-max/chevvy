@@ -1,0 +1,123 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# Logs
+*.log
+
+# Gradle
+.gradle/
+local.properties
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+
+# iOS/macOS
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vscode/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/.DS_Store
+**/ios/**/*.jinja2
+**/ios/**/*.pbxproj
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*.xcarchive
+**/ios/**/*.xcodeproj
+**/ios/**/*.xcworkspace
+**/ios/**/Flutter/Flutter.framework
+**/ios/**/Flutter/Flutter.podspec
+**/ios/**/GoogleService-Info.plist
+**/ios/**/.symlinks/
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Android
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/app/google-services.json
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+
+# Web
+lib/generated_plugin_registrant.dart
+
+# Miscellaneous
+*.class
+*.lock
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.env
+.env.local
+.env.*.local
+
+# Firebase
+firebase-debug.log
+
+# Platform-specific files
+Podfile.lock
+Podfile
+.ruby-version
+
+# Generated files
+coverage/
+build/
+.dart_tool/
+doc/api/
+
+# Node modules (if using Firebase CLI)
+node_modules/
+npm-debug.log
+
+# Environment files
+.env
+.env.development
+.env.production
+firebase_options.dart.local
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# IDE specific
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
