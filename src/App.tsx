@@ -109,7 +109,6 @@ export default function App() {
   const [showStartOfDayPlan, setShowStartOfDayPlan] = useState(false);
   const [showEndOfDayReview, setShowEndOfDayReview] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [localNotifications, setLocalNotifications] = useState<{ id: string; title: string; body: string }[]>([]);
 
   // Accessibility state
   const [highContrast, setHighContrast] = useState(false);
@@ -125,7 +124,6 @@ export default function App() {
   // User preferences from Settings
   const [startOfDayTime, setStartOfDayTime] = useState('08:00');
   const [endOfDayTime, setEndOfDayTime] = useState('21:00');
-  const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'te' | 'hi'>('en');
 
   // Load database
   useEffect(() => {
@@ -269,8 +267,6 @@ export default function App() {
 
   const triggerLocalNotification = (title: string, body: string) => {
     if (!notificationsEnabled) return;
-    const newNotif = { id: db.generateId(), title, body };
-    setLocalNotifications(prev => [newNotif, ...prev]);
     showToast(`${title}: ${body}`);
   };
 
@@ -1256,7 +1252,7 @@ export default function App() {
                         <div style={{ flex: 1, position: 'relative' }}>
                           <input 
                             className="input-field" 
-                            style={{ width: '100%', paddingLeft: 34, paddingRight: 8, paddingItem: 8, fontSize: '12px' }}
+                            style={{ width: '100%', paddingLeft: 34, paddingRight: 8, paddingTop: 8, paddingBottom: 8, fontSize: '12px' }}
                             placeholder="Search note tags/text..."
                             value={noteSearch}
                             onChange={e => setNoteSearch(e.target.value)}
