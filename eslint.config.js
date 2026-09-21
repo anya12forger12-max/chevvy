@@ -12,11 +12,27 @@ export default defineConfig([
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
     languageOptions: {
       globals: globals.browser,
+    },
+    rules: {
+      // Keep only the classic rules-of-hooks + exhaustive-deps checks.
+      // eslint-plugin-react-hooks v7 bundles React-Compiler-aware rules
+      // (purity, immutability, set-state-in-effect, ...) in every preset;
+      // those are intentionally not enabled: this app targets plain React
+      // without the compiler and uses standard effect-driven data loading.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      // Shared destructure-omit pattern, e.g.
+      // const { passwordHash, salt, ...safeUser } = user;
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+      // Codebase-wide parity with the other org frontends.
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ])

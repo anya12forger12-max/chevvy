@@ -134,11 +134,12 @@ export default function App() {
         const profile = db.getUserProfile(token);
         setUser(profile);
         refreshData(token);
-      } catch (err) {
+      } catch {
         setToken(null);
         sessionStorage.removeItem('chevvy_token');
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps intentionally minimal: refresh/due-check must not re-run every render
   }, [token]);
 
   // Sync data refresh
@@ -163,7 +164,7 @@ export default function App() {
         const logs = db.getAuditLogs(authToken);
         setAuditLogs(logs);
       }
-    } catch (err) {
+    } catch {
       showToast('Data sync failed.');
     }
   };
@@ -252,6 +253,7 @@ export default function App() {
     }, 15000); // Check every 15s
 
     return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps intentionally minimal: refresh/due-check must not re-run every render
   }, [tasks, activeAlarmTask, spotifyEnabled]);
 
   // Simulate Spotify progress
@@ -347,7 +349,7 @@ export default function App() {
         try {
           const mockEmail = 'spotify_user@chevvy.app';
           const users = JSON.parse(localStorage.getItem('chevvy_users') || '[]');
-          let existingUser = users.find((u: any) => u.email === mockEmail);
+          const existingUser = users.find((u: any) => u.email === mockEmail);
           
           if (!existingUser) {
             // Register spotify user
@@ -364,7 +366,7 @@ export default function App() {
             sessionStorage.setItem('chevvy_token', res.token);
           }
           showToast('Spotify OAuth Success!');
-        } catch (err) {
+        } catch {
           showToast('OAuth profile linking failed.');
         }
       }
@@ -388,7 +390,7 @@ export default function App() {
     if (!token) return;
 
     // Build reminders
-    let reminderBefore: number[] = [];
+    let reminderBefore: number[];
     if (taskPriority === 'important') {
       reminderBefore = [60, 30]; // 1 hour, 30 mins
     } else if (taskPriority === 'normal') {
@@ -464,7 +466,7 @@ export default function App() {
       db.deleteTask(token, id);
       showToast('Task deleted.');
       refreshData(token);
-    } catch (err: any) {
+    } catch {
       showToast('Failed to delete task.');
     }
   };
@@ -474,7 +476,7 @@ export default function App() {
     try {
       db.updateTask(token, task.id, { completed: !task.completed });
       refreshData(token);
-    } catch (err: any) {
+    } catch {
       showToast('Failed to toggle completion.');
     }
   };
@@ -492,7 +494,7 @@ export default function App() {
       setSpotifyPlaying(false);
       showToast(`Task "${task.title}" snoozed for ${minutes} minutes.`);
       refreshData(token);
-    } catch (err) {
+    } catch {
       showToast('Snooze failed.');
     }
   };
@@ -517,7 +519,7 @@ export default function App() {
         showToast('Note created.');
       }
       refreshData(token);
-    } catch (err) {
+    } catch {
       showToast('Failed to save note.');
     }
   };
@@ -539,7 +541,7 @@ export default function App() {
       handleCreateNewNote();
       showToast('Note deleted.');
       refreshData(token);
-    } catch (err) {
+    } catch {
       showToast('Note delete failed.');
     }
   };
@@ -669,7 +671,7 @@ export default function App() {
       setAiSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
       showToast(`Scheduled: "${suggestion.title}"`);
       refreshData(token);
-    } catch (err) {
+    } catch {
       showToast('AI scheduling failed.');
     }
   };
@@ -701,7 +703,7 @@ export default function App() {
       db.revokeSession(token, sid);
       showToast('Session revoked.');
       refreshData(token);
-    } catch (err) {
+    } catch {
       showToast('Failed to revoke session.');
     }
   };
@@ -730,7 +732,7 @@ export default function App() {
         showToast('Schedule optimized successfully!');
         refreshData(token);
       }
-    } catch (err) {
+    } catch {
       showToast('Optimizing failed.');
     }
   };

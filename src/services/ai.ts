@@ -19,7 +19,7 @@ export interface AISuggestedTask {
 // Simple natural language helper to parse common date-time strings
 function parseExtractedDate(phrase: string, lang: 'en' | 'te' | 'hi'): Date {
   const now = new Date();
-  let targetDate = new Date(now);
+  const targetDate = new Date(now);
 
   const cleanPhrase = phrase.toLowerCase().trim();
 
@@ -173,7 +173,7 @@ export function detectTasksFromNote(note: Note): AISuggestedTask[] {
   if (suggestions.length === 0) {
     const lines = textContent.split('\n');
     lines.forEach(line => {
-      const cleanLine = line.replace(/^[-\*\s\d\.\(\)]+/, '').trim();
+      const cleanLine = line.replace(/^[-*\s\d.()]+/, '').trim();
       if (cleanLine.length > 5 && (cleanLine.toLowerCase().includes('meeting') || cleanLine.toLowerCase().includes('deadline') || cleanLine.toLowerCase().includes('due'))) {
         // Find if any dates are mentioned
         const tomorrow = new Date();
