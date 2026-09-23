@@ -39,9 +39,18 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
-  // Privacy Policy state
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  // Privacy Policy state (persisted so consent survives reloads)
+  const [privacyAccepted, setPrivacyAccepted] = useState(() => localStorage.getItem('chevvy_privacy_accepted') === 'true');
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
+  const updatePrivacyAccepted = (value: boolean) => {
+    setPrivacyAccepted(value);
+    try {
+      localStorage.setItem('chevvy_privacy_accepted', String(value));
+    } catch {
+      // Storage unavailable — consent is session-only, gate still applies
+    }
+  };
 
   // Tab navigation
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'notes' | 'spotify' | 'settings' | 'admin'>('home');
@@ -67,6 +76,7 @@ export default function App() {
 
   // Note creation/editing state
   const [selectedNote, setSelectedNote] = useState<db.Note | null>(null);
+  const [noteEditorOpen, setNoteEditorOpen] = useState(false);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteContent, setNoteContent] = useState('');
   const [noteFolder, setNoteFolder] = useState('General');
@@ -120,6 +130,11 @@ export default function App() {
 
   // Toast alerts
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // One-shot firing guards for reminders/alarms (prevents duplicate notifications on every 15s tick)
+  const firedReminderKeys = useRef<Set<string>>(new Set());
+  const firedAlarmKeys = useRef<Set<string>>(new Set());
+  const alarmQueue = useRef<db.Task[]>([]);
 
   // User preferences from Settings
   const [startOfDayTime, setStartOfDayTime] = useState('08:00');
@@ -217,39 +232,59 @@ export default function App() {
       const nowTime = new Date().getTime();
       
       tasks.forEach(task => {
-        if (!task.completed) {
-          const taskTime = new Date(task.dueDate).getTime();
-          const diffMins = Math.round((taskTime - nowTime) / 60000);
+        if (task.completed) return;
+        const taskTime = new Date(task.dueDate).getTime();
+        const diffMins = Math.round((taskTime - nowTime) / 60000);
+        const inDueWindow = taskTime <= nowTime && taskTime > nowTime - 60000;
+        const occurrenceKey = `${task.id}:${task.dueDate}`;
 
-          // Trigger Alarms at precise due time
-          if (taskTime <= nowTime && taskTime > nowTime - 60000 && !activeAlarmTask) {
-            // Trigger alarm
-            if (task.hasAlarm) {
-              setActiveAlarmTask(task);
-              if (spotifyEnabled) {
-                setSpotifyPlaying(true);
-                setSpotifyCurrentTrack(task.alarmMusic || 'Cherry Blossom Chillout');
-              }
-            } else {
-              triggerLocalNotification(task.title, 'Task schedule starts now.');
-              // Auto mark complete or snooze
-            }
-          }
+        // Enqueue a distinct alarm occurrence for each task due within this minute.
+        // (Previously `!activeAlarmTask` silently dropped a second task due in the
+        // same window — its one-minute chance passed while the first was ringing.)
+        if (inDueWindow && task.hasAlarm && !firedAlarmKeys.current.has(occurrenceKey)) {
+          firedAlarmKeys.current.add(occurrenceKey);
+          alarmQueue.current.push(task);
+        }
 
-          // Trigger before-reminders
-          if (task.reminderBefore) {
-            task.reminderBefore.forEach(reminderMin => {
-              // Trigger reminder check
-              if (diffMins === reminderMin) {
+        // Non-alarm tasks notify exactly once per occurrence
+        if (inDueWindow && !task.hasAlarm && !firedAlarmKeys.current.has(`${occurrenceKey}:notify`)) {
+          firedAlarmKeys.current.add(`${occurrenceKey}:notify`);
+          triggerLocalNotification(task.title, 'Task schedule starts now.');
+        }
+
+        // Before-reminders: fire exactly once per occurrence per reminder minute.
+        // (Previously `diffMins === reminderMin` re-fired on every 15s tick for the
+        // whole ~1-minute rounding window, spamming the same reminder up to 4-8x.)
+        if (task.reminderBefore) {
+          task.reminderBefore.forEach(reminderMin => {
+            if (diffMins === reminderMin) {
+              const reminderKey = `${occurrenceKey}:${reminderMin}`;
+              if (!firedReminderKeys.current.has(reminderKey)) {
+                firedReminderKeys.current.add(reminderKey);
                 triggerLocalNotification(
                   `Reminder: ${task.title}`,
                   `Starts in ${reminderMin} minutes.`
                 );
               }
-            });
-          }
+            }
+          });
         }
       });
+
+      // Drop stale queue entries (completed/deleted/rescheduled tasks)
+      alarmQueue.current = alarmQueue.current.filter(q =>
+        tasks.some(t => t.id === q.id && t.dueDate === q.dueDate && !t.completed)
+      );
+
+      // Ring the next queued alarm when none is active
+      if (!activeAlarmTask && alarmQueue.current.length > 0 && !alarmQueue.current[0].completed) {
+        const next = alarmQueue.current.shift()!;
+        setActiveAlarmTask(next);
+        if (spotifyEnabled) {
+          setSpotifyPlaying(true);
+          setSpotifyCurrentTrack(next.alarmMusic || 'Cherry Blossom Chillout');
+        }
+      }
     }, 15000); // Check every 15s
 
     return () => clearInterval(timer);
@@ -526,6 +561,7 @@ export default function App() {
 
   const handleCreateNewNote = () => {
     setSelectedNote(null);
+    setNoteEditorOpen(true);
     setNoteTitle('');
     setNoteContent('');
     setNoteFolder('General');
@@ -539,6 +575,7 @@ export default function App() {
     try {
       db.deleteNote(token, id);
       handleCreateNewNote();
+      setNoteEditorOpen(false);
       showToast('Note deleted.');
       refreshData(token);
     } catch {
@@ -690,6 +727,10 @@ export default function App() {
       
       const notesList = JSON.parse(localStorage.getItem('chevvy_notes') || '[]');
       localStorage.setItem('chevvy_notes', JSON.stringify(notesList.filter((n: any) => n.userId !== user?.id)));
+
+      // Clean up sessions so no orphaned/dead session rows linger
+      const sessionsList = JSON.parse(localStorage.getItem('chevvy_sessions') || '[]');
+      localStorage.setItem('chevvy_sessions', JSON.stringify(sessionsList.filter((s: any) => s.userId !== user?.id)));
 
       handleLogout();
       showToast('Account permanently deleted.');
@@ -929,7 +970,7 @@ export default function App() {
                       type="checkbox" 
                       id="policyCheck" 
                       checked={privacyAccepted} 
-                      onChange={e => setPrivacyAccepted(e.target.checked)} 
+                      onChange={e => updatePrivacyAccepted(e.target.checked)} 
                       style={{ marginTop: 4, cursor: 'pointer' }}
                     />
                     <label htmlFor="policyCheck" style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
@@ -1306,7 +1347,7 @@ export default function App() {
                     {/* Notes Workspace split list & editor */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
                       
-                      {!selectedNote && noteTitle === '' && noteContent === '' ? (
+                      {!noteEditorOpen && noteTitle === '' && noteContent === '' ? (
                         /* Notes listing */
                         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {getSortedNotes().length === 0 ? (
@@ -1319,6 +1360,7 @@ export default function App() {
                                 style={{ display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'left', cursor: 'pointer' }}
                                 onClick={() => {
                                   setSelectedNote(note);
+                                  setNoteEditorOpen(true);
                                   setNoteTitle(note.title);
                                   setNoteContent(note.content);
                                   setNoteFolder(note.folder);
@@ -1346,7 +1388,7 @@ export default function App() {
                             <button 
                               className="btn btn-secondary" 
                               style={{ width: 'auto', padding: '6px 10px' }}
-                              onClick={() => { setSelectedNote(null); handleCreateNewNote(); }}
+                              onClick={() => { setNoteEditorOpen(false); setSelectedNote(null); setNoteTitle(''); setNoteContent(''); setAiSuggestions([]); }}
                             >
                               Back
                             </button>
@@ -2039,13 +2081,13 @@ export default function App() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button 
                     className="btn btn-primary" 
-                    onClick={() => { setPrivacyAccepted(true); setShowPrivacyModal(false); }}
+                    onClick={() => { updatePrivacyAccepted(true); setShowPrivacyModal(false); }}
                   >
                     Accept Policy
                   </button>
                   <button 
                     className="btn btn-secondary" 
-                    onClick={() => { setPrivacyAccepted(false); setShowPrivacyModal(false); }}
+                    onClick={() => { updatePrivacyAccepted(false); setShowPrivacyModal(false); }}
                   >
                     Decline & Deny Access
                   </button>

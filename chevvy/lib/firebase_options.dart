@@ -4,6 +4,8 @@
 // Run `flutterfire configure` to generate this file with your Firebase config.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -17,27 +19,25 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 /// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (identical(defaultTargetPlatform, TargetPlatformAndroid)) {
-      return android;
-    }
-    if (identical(defaultTargetPlatform, TargetPlatformIOS)) {
-      return ios;
-    }
-    if (identical(defaultTargetPlatform, TargetPlatformWeb)) {
+    if (kIsWeb) {
       return web;
     }
-    if (identical(defaultTargetPlatform, TargetPlatformWindows)) {
-      return windows;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        return ios;
+      case TargetPlatform.macOS:
+        return macos;
+      case TargetPlatform.windows:
+        return windows;
+      case TargetPlatform.linux:
+        return linux;
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not supported for this platform.',
+        );
     }
-    if (identical(defaultTargetPlatform, TargetPlatformMacOS)) {
-      return macos;
-    }
-    if (identical(defaultTargetPlatform, TargetPlatformLinux)) {
-      return linux;
-    }
-    throw UnsupportedError(
-      'DefaultFirebaseOptions are not supported for this platform.',
-    );
   }
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -90,16 +90,4 @@ class DefaultFirebaseOptions {
     projectId: 'your-project-id',
     storageBucket: 'your-project-id.appspot.com',
   );
-}
-
-// Platform detection helper
-const defaultTargetPlatform = TargetPlatform.android;
-
-enum TargetPlatform {
-  android,
-  ios,
-  web,
-  windows,
-  macos,
-  linux,
 }

@@ -67,6 +67,9 @@ export function generateId(): string {
 
 // Helper to hash password using SHA-256 via WebCrypto API
 export async function hashPassword(password: string, salt: string): Promise<string> {
+  if (!crypto?.subtle) {
+    throw new Error('This browser does not support WebCrypto (secure context required, e.g. HTTPS or localhost).');
+  }
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);

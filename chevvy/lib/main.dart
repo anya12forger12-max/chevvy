@@ -53,20 +53,8 @@ class _ChevvyAppState extends State<ChevvyApp> {
           return null;
         }
 
-        // Check authentication and privacy
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          return '/login';
-        }
-
-        final privacyService = PrivacyService();
-        final hasAcceptedPrivacy =
-            await privacyService.checkPrivacyAcceptance();
-        if (!hasAcceptedPrivacy) {
-          return '/privacy-policy';
-        }
-
-        return null;
+        // Check authentication and privacy via the shared guard (single source of truth)
+        return _privacyGuard.redirect(context, state);
       },
       routes: [
         GoRoute(

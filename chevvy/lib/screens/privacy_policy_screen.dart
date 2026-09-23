@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/privacy_service.dart';
 import '../widgets/privacy_policy_card.dart';
 
