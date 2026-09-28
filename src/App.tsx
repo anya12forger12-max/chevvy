@@ -292,6 +292,10 @@ export default function App() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!privacyAccepted) {
+      showToast('You must explicitly accept the Privacy Policy to proceed.');
+      return;
+    }
     try {
       const res = await db.loginUser(email, password);
       setToken(res.token);
@@ -2002,7 +2006,7 @@ export default function App() {
             </div>
           )}
 
-          {/* D. Privacy Policy Scrolling Overlay during Signup */}
+          {/* D. Privacy Policy Scrolling Overlay during Signup */}          {/* D. Privacy Policy Scrolling Overlay during Signup */}
           {showPrivacyModal && (
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
               <div className="glass-card" style={{ width: '100%', height: '80%', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
@@ -2015,47 +2019,58 @@ export default function App() {
 
                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: 6, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4, borderBottom: '1px solid var(--border-ui)' }}>
                   <p><strong>Effective Date: June 22, 2026</strong></p>
-                  <p style={{ margin: '8px 0' }}>Welcome to Chevvy, an AI-powered smart scheduler, productivity planner, note-taking application, reminder system, and Spotify-integrated alarm assistant.</p>
                   
+                  <!-- COPPA AGE RESTRICTION -->
+                  <p style={{ margin: '8px 0', color: 'var(--text-danger)'}}>
+                    <strong>Age Restriction:</strong> This app is not intended for users under 13 years of age. Users under 13 must have parental/guardian consent to use this app. We do not knowingly collect personal information from children under 13.
+                  </p>
+
                   <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>1. INFORMATION WE COLLECT</h4>
                   <ul>
-                    <li>Account information: Secure hashed password (bcrypt representation) and email profile.</li>
+                    <li>Account information: Securely hashed password and email profile.</li>
                     <li>Spotify connection: Access/refresh tokens for alarms, play playback music, and playlist metadata linked via Spotify OAuth.</li>
                     <li>Productivity schedules: Task items, due times, completion rates, and snooze counters analyzed for learning focus habits.</li>
                     <li>Voice notes: Microphone capture access to run speech transcription in English, Telugu, and Hindi. Audio is processed immediately and not saved persistently unless saved manually.</li>
                     <li>Device settings and configurations.</li>
                   </ul>
 
-                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>2. SPECIAL ADMINISTRATIVE DATA ACCESS</h4>
-                  <p>Administrators may access stored user data (including tasks, notes, profile details, and usage logs) for support maintenance, legal compliance, abuse prevention, and platform security checks.</p>
+                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>2. SPECIAL ADMINISTRATIVE DATA ACCESS (User-Consented)</h4>
+                  <p>Users explicitly consent to limited administrative access to their data solely for the purposes of support maintenance, legal compliance, abuse prevention, and platform platform security checks. Access is restricted, logged, and auditable.</p>
 
                   <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>3. CONTENT OWNERSHIP & PRIVACY</h4>
                   <p>Users retain full ownership of notes and schedules. We secure connection paths via HTTPS and encrypt databases. Sessions expire after inactivity and can be manually terminated.</p>
 
-                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>4. LIMITATION OF LIABILITY</h4>
-                  <p>Chevvy and its developers are not liable for direct or indirect losses, Spotify API interruptions, or data outages.</p>
-                </div>
+                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>4. DATA RETENTION</h4>
+                  <p>User data is retained for 24 months after last activity. Inactive accounts are purged after 12 months of dormancy. Users may request immediate deletion at any time.</p>
 
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={() => { setPrivacyAccepted(true); setShowPrivacyModal(false); }}
-                  >
-                    Accept Policy
-                  </button>
-                  <button 
-                    className="btn btn-secondary" 
-                    onClick={() => { setPrivacyAccepted(false); setShowPrivacyModal(false); }}
-                  >
-                    Decline & Deny Access
-                  </button>
+                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>5. LIMITATIONS OF LIABILITY</h4>
+                  <p>Chevvy and its developers accept liability for gross negligence, willful misconduct, and violations of this privacy policy. We are not liable for ordinary direct damages, Spotify API interruptions, or unforeseeable data outages. Users bear responsibility for their own data backup strategies.</p>
+
+                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>6. USER RIGHTS</h4>
+                  <p>You have the following rights regarding your data:</p>
+                  <ul style={{ margin: '0 0 8px 16px', padding: '0 }}>
+                    <li style={{ marginBottom: '4px'}}>
+                      <strong>Access:</strong> You may request a copy of all personal data we hold about you.</li>
+                    <li style={{ marginBottom: '4px'}}>
+                      <strong>Rectification:</strong> You may request correction of inaccurate data.</li>
+                    <li style={{ marginBottom: '4px'}}>
+                      <strong>Portability:</strong> You may request your data in a machine-readable format.</li>
+                    <li style={{ marginBottom: '4px'}}>
+                      <strong>Erasure:</strong> You may request deletion of your personal data.</li>
+                    <li style={{ marginBottom: '4px'}}>
+                      <strong>Objection:</strong> You may object to processing of your data for certain purposes.</li>
+                    <li style={{ marginBottom: '4px'}}>
+                      <strong>Withdrawal of consent:</strong> You may withdraw your consent at any time, which will result in data deletion and account closure.</li>
+                  </ul>
+
+                  <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>7. SPECIAL ADMINISTRATIVE ACCESS</h4>
+                  <p>Users explicitly consent to limited administrative access to their data solely for the purposes of support maintenance, legal compliance, abuse prevention, and platform platform security checks. Access is restricted, logged, and auditable. Administrators do not have unrestricted view rights. All access events are logged and can be reviewed upon request.</p>
+
+                  <p style={{ margin: '12px 0', color: 'var(--text-secondary)' }}>
+                    <button className="btn btn-primary" onClick={() => setPrivacyAccepted(true)}>Accept Policy</button>
+                    <button className="btn secondary" onClick={() => setPrivacyAccepted(false)}>Decline & Deny Access</button>
+                  </p>
                 </div>
               </div>
             </div>
           )}
-
-        </div>
-      </div>
-    </div>
-  );
-}
