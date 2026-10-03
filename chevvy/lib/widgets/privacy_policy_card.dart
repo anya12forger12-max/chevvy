@@ -100,7 +100,7 @@ class PrivacyPolicySectionHeader extends StatelessWidget {
                   : Colors.black87,
             ),
           ),
-          if (subtitle.isNotEmpty) ...[]
+          if (subtitle.isNotEmpty) ...[
             const SizedBox(height: 4.0),
             Text(
               subtitle,
@@ -137,7 +137,6 @@ class PrivacyAcceptanceCheckbox extends StatelessWidget {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Semantics(
-      checkbox: true,
       enabled: true,
       onTap: () => onChanged(!value),
       label: label,
