@@ -2020,7 +2020,7 @@ export default function App() {
                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: 6, fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4, borderBottom: '1px solid var(--border-ui)' }}>
                   <p><strong>Effective Date: June 22, 2026</strong></p>
                   
-                  <!-- COPPA AGE RESTRICTION -->
+                  {/* COPPA AGE RESTRICTION */}
                   <p style={{ margin: '8px 0', color: 'var(--text-danger)'}}>
                     <strong>Age Restriction:</strong> This app is not intended for users under 13 years of age. Users under 13 must have parental/guardian consent to use this app. We do not knowingly collect personal information from children under 13.
                   </p>
@@ -2048,7 +2048,7 @@ export default function App() {
 
                   <h4 style={{ fontSize: '11px', margin: '8px 0 4px', color: 'var(--text-primary)' }}>6. USER RIGHTS</h4>
                   <p>You have the following rights regarding your data:</p>
-                  <ul style={{ margin: '0 0 8px 16px', padding: '0 }}>
+                  <ul style={{ margin: '0 0 8px 16px', padding: '0' }}>
                     <li style={{ marginBottom: '4px'}}>
                       <strong>Access:</strong> You may request a copy of all personal data we hold about you.</li>
                     <li style={{ marginBottom: '4px'}}>
@@ -2074,3 +2074,8 @@ export default function App() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
