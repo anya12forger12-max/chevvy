@@ -42,5 +42,14 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           channelId: live
+          # Pinned to 15.33.0: this action shells out to an UNPINNED npx
+          # firebase-tools (resolves latest), and 15.34.0+ added a serviceusage
+          # precheck to the hosting deploy path (ensureApiEnabled on
+          # firebasehosting.googleapis.com). The service account lacks
+          # serviceusage.services.get, so deploys fail with 403 "Permission
+          # denied to get service". 15.33.0 is the last version proven green in
+          # this pipeline (run 37747566593). Unpin once the SA is granted
+          # roles/serviceusage.serviceUsageViewer.
+          firebaseToolsVersion: '15.33.0'
           projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
