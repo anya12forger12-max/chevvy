@@ -71,3 +71,13 @@ export default defineConfig([
   },
 ])
 ```
+
+
+## Installation
+
+```bash
+npm install
+npm run dev
+```
+
+Or use `./install.sh`.
