@@ -1,0 +1,11 @@
+# Keep local dependencies, build output, and secrets out of the build context.
+node_modules
+dist
+dist-ssr
+.git
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+.DS_Store
