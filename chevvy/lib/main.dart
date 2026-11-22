@@ -32,12 +32,10 @@ class ChevvyApp extends StatefulWidget {
 
 class _ChevvyAppState extends State<ChevvyApp> {
   late GoRouter _router;
-  late PrivacyGuard _privacyGuard;
 
   @override
   void initState() {
     super.initState();
-    _privacyGuard = PrivacyGuard();
     _router = _buildRouter();
   }
 

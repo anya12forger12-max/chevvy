@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Generated file - do not edit manually
 class DefaultFirebaseOptions {
   static dynamic get currentPlatform {
