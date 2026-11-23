@@ -27,3 +27,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Never commit credentials
+.gh_token
+.token

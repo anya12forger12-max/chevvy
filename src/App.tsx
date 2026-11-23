@@ -315,7 +315,14 @@ export default function App() {
     }
     announceToScreenReader('Launching Spotify Secure OAuth Flow');
     
-    // Simulate interactive OAuth redirect window
+    // Simulate interactive OAuth redirect window.
+    // A random nonce binds the popup's callback to this authorization attempt;
+    // without it any page could send the well-known message and log the user
+    // into the mock Spotify account.
+    const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    const expectedMessage = `spotify_auth_success:${nonce}`;
     const width = 450, height = 550;
     const left = (window.screen.width / 2) - (width / 2);
     const top = (window.screen.height / 2) - (height / 2);
@@ -339,15 +346,19 @@ export default function App() {
             <p class="details">
               This will allow Chevvy to connect playlists, play wake-up alarm music, control Spotify player output, and verify your account.
             </p>
-            <button class="btn" onclick="window.opener.postMessage('spotify_auth_success', '*'); window.close();">Agree & Authorize</button>
+            <button class="btn" onclick="window.opener.postMessage('spotify_auth_success:${nonce}', window.location.origin); window.close();">Agree & Authorize</button>
           </body>
         </html>
       `);
     }
 
     const receiveMessage = async (event: MessageEvent) => {
-      if (event.data === 'spotify_auth_success') {
-        window.removeEventListener('message', receiveMessage);
+      // Only accept the exact nonce-bearing message from the popup we opened
+      // and only from our own origin. Any other window (including a hostile
+      // site that iframes us) must not be able to trigger a login.
+      if (event.source !== popup || event.origin !== window.location.origin || event.data !== expectedMessage) return;
+      window.removeEventListener('message', receiveMessage);
+      {
         
         // Log in or link profile
         try {
