@@ -79,3 +79,14 @@ The demo accounts are seeded in source and the data layer uses browser `localSto
 - Flutter module: MIT License, Copyright (c) 2026 anyaforger123456 — see [`chevvy/LICENSE`](chevvy/LICENSE).
 
 Additional guides: [CONTRIBUTING.md](CONTRIBUTING.md), [ONBOARDING.md](ONBOARDING.md), [TROUBLESHOOTING.md](TROUBLESHOOTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## Quick start — 1 or 2 commands
+
+```bash
+./setup.sh          # install dependencies
+./setup.sh run      # start the project (when a run target exists)
+```
+
+`setup.sh` detects this repository's build system and installs the right toolchain
+dependencies. Use `./setup.sh test` to run the available checks. If a project has no
+standard run target, the script prints the correct command from the sections above.
