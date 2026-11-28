@@ -60,18 +60,72 @@ export interface UserSession {
   lastActive: string;
 }
 
-// Generate a random ID
+// All identifiers (including session tokens and password salts) come from the
+// CSPRNG. Math.random is predictable and must never be used for either.
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Helper to hash password using SHA-256 via WebCrypto API
+const PBKDF2_ITERATIONS = 310_000;
+const PBKDF2_PREFIX = 'pbkdf2$';
+
+function toHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Compare fixed-length hex strings without short-circuiting on the first
+// difference, so verification time does not reveal a matching prefix.
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// Passwords are stretched with PBKDF2-SHA256. The stored value is versioned so
+// legacy single-round SHA-256 hashes can still log in and be upgraded on the
+// next successful authentication.
 export async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + salt);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: encoder.encode(salt), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    key,
+    256,
+  );
+  return `${PBKDF2_PREFIX}${PBKDF2_ITERATIONS}$${toHex(bits)}`;
+}
+
+async function legacySha256(password: string, salt: string): Promise<string> {
+  const data = new TextEncoder().encode(password + salt);
+  return toHex(await crypto.subtle.digest('SHA-256', data));
+}
+
+/** Verify a password and return an upgraded hash when a legacy one matched. */
+export async function verifyPassword(
+  password: string,
+  storedHash: string,
+  salt: string,
+): Promise<{ ok: boolean; upgrade?: string }> {
+  if (storedHash.startsWith(PBKDF2_PREFIX)) {
+    // Re-derive with the stored parameters rather than trusting a client value.
+    const [, storedIterations, storedDigest] = storedHash.split('$');
+    if (!storedDigest || Number(storedIterations) !== PBKDF2_ITERATIONS) return { ok: false };
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: encoder.encode(salt), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+      key,
+      256,
+    );
+    return { ok: constantTimeEqual(toHex(bits), storedDigest) };
+  }
+
+  const legacy = await legacySha256(password, salt);
+  if (!constantTimeEqual(legacy, storedHash)) return { ok: false };
+  return { ok: true, upgrade: await hashPassword(password, salt) };
 }
 
 // Initialize tables in LocalStorage if they don't exist
@@ -84,116 +138,33 @@ const TABLES = {
   SETTINGS: 'chevvy_settings',
 };
 
-// Seed default users if empty (includes an admin)
+// Initialise storage. No accounts are seeded with a password baked into the
+// bundle: a universal "admin123" would grant every visitor admin rights. An
+// operator can create the first admin by setting VITE_ADMIN_BOOTSTRAP_PASSWORD
+// before the first load (see .env.example); the password is never committed.
 export async function initDatabase() {
-  if (!localStorage.getItem(TABLES.USERS)) {
-    const salt1 = generateId();
-    const hash1 = await hashPassword('admin123', salt1);
-    const adminUser: User = {
-      id: 'admin-user',
+  if (localStorage.getItem(TABLES.USERS)) return;
+
+  const users: User[] = [];
+  const bootstrapPassword = import.meta.env.VITE_ADMIN_BOOTSTRAP_PASSWORD;
+  if (typeof bootstrapPassword === 'string' && bootstrapPassword.length > 0) {
+    const salt = generateId();
+    users.push({
+      id: generateId(),
       name: 'System Admin',
-      email: 'admin@chevvy.app',
-      passwordHash: hash1,
-      salt: salt1,
+      email: import.meta.env.VITE_ADMIN_BOOTSTRAP_EMAIL || 'admin@chevvy.app',
+      passwordHash: await hashPassword(bootstrapPassword, salt),
+      salt,
       role: 'admin',
       spotifyConnected: false,
       createdAt: new Date().toISOString(),
-    };
-
-    const salt2 = generateId();
-    const hash2 = await hashPassword('password123', salt2);
-    const regularUser: User = {
-      id: 'demo-user',
-      name: 'Jane Doe',
-      email: 'jane@example.com',
-      passwordHash: hash2,
-      salt: salt2,
-      role: 'user',
-      spotifyConnected: true,
-      spotifyUser: 'spotify_jane_doe',
-      createdAt: new Date().toISOString(),
-    };
-
-    localStorage.setItem(TABLES.USERS, JSON.stringify([adminUser, regularUser]));
-    logAudit('SYSTEM', 'Database initialized', 'Database seeded with default admin and user profiles.');
-
-    // Seed mock tasks for Jane
-    const janeTasks: Task[] = [
-      {
-        id: 'task-1',
-        userId: 'demo-user',
-        title: 'Morning Yoga and Meditation',
-        description: 'Focus on breathing exercises.',
-        priority: 'normal',
-        color: '#ffc0cb',
-        colorType: 'pastel',
-        dueDate: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 mins from now
-        reminderBefore: [10, 5],
-        hasAlarm: true,
-        alarmMusic: 'Cherry Blossom Chillout',
-        completed: false,
-        snoozedCount: 0,
-        recurrence: 'daily',
-      },
-      {
-        id: 'task-2',
-        userId: 'demo-user',
-        title: 'Project Presentation Draft',
-        description: 'Prepare the summary slides for the team.',
-        priority: 'important',
-        color: '#ffdf00',
-        colorType: 'standard',
-        dueDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
-        reminderBefore: [60, 30],
-        hasAlarm: true,
-        alarmMusic: 'High Energy Beat',
-        completed: false,
-        snoozedCount: 0,
-        recurrence: 'none',
-      },
-      {
-        id: 'task-3',
-        userId: 'demo-user',
-        title: 'Read AI Research Notes',
-        description: 'Review transcription updates.',
-        priority: 'low',
-        color: '#d4af37',
-        colorType: 'metallic',
-        dueDate: new Date(Date.now() + 180 * 60 * 1000).toISOString(), // 3 hours from now
-        reminderBefore: [],
-        hasAlarm: false,
-        completed: false,
-        snoozedCount: 0,
-        recurrence: 'none',
-      }
-    ];
-    localStorage.setItem(TABLES.TASKS, JSON.stringify(janeTasks));
-
-    // Seed mock notes for Jane
-    const janeNotes: Note[] = [
-      {
-        id: 'note-1',
-        userId: 'demo-user',
-        title: 'Weekly Grocery List',
-        content: '<div><strong>Organic Items:</strong></div><ul><li>Fresh Cherries 🍒</li><li>Organic Lemon Honey 🍋</li><li>Almond Milk</li></ul>',
-        folder: 'Shopping',
-        isFavorite: true,
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'note-2',
-        userId: 'demo-user',
-        title: 'Product Design Ideas',
-        content: '<div>Ideas for Chevvy interface styling:</div><ul><li>Use high contrast modes and beautiful custom HSL colors.</li><li>Add smooth micro-animations.</li><li>Ensure keyboard navigation support is fully implemented.</li></ul>',
-        folder: 'Work',
-        isFavorite: false,
-        createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-    ];
-    localStorage.setItem(TABLES.NOTES, JSON.stringify(janeNotes));
+    });
+    logAudit('SYSTEM', 'ADMIN_BOOTSTRAP', 'Admin account created from operator-provided password.');
   }
+
+  localStorage.setItem(TABLES.USERS, JSON.stringify(users));
+  if (!localStorage.getItem(TABLES.TASKS)) localStorage.setItem(TABLES.TASKS, '[]');
+  if (!localStorage.getItem(TABLES.NOTES)) localStorage.setItem(TABLES.NOTES, '[]');
 }
 
 // Audit logging helper
@@ -262,9 +233,14 @@ export async function loginUser(email: string, password: string): Promise<{ toke
     throw new Error('Invalid email or password');
   }
 
-  const computedHash = await hashPassword(password, user.salt);
-  if (computedHash !== user.passwordHash) {
+  const verification = await verifyPassword(password, user.passwordHash, user.salt);
+  if (!verification.ok) {
     throw new Error('Invalid email or password');
+  }
+  // Transparently move legacy SHA-256 accounts to PBKDF2 on successful login.
+  if (verification.upgrade) {
+    users[users.indexOf(user)].passwordHash = verification.upgrade;
+    localStorage.setItem(TABLES.USERS, JSON.stringify(users));
   }
 
   // Create a new session token
